@@ -1,0 +1,19 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Environment
+.env
+.venv/
+env/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
