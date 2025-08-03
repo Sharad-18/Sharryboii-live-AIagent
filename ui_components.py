@@ -20,7 +20,7 @@ class UIComponents:
         """Create the main header"""
         return gr.Markdown("""
         <h1 style='color: orange; text-align: center; font-size: 4em;'> 
-            👧🏼 SharryBoii – Your Personal AI Assistant 
+            👧🏼 SharryBoii-V1.1 –AI Assistant 
         </h1>
         <p style='text-align: center; font-size: 1.2em; color: #666;'>
             Powered by LangGraph for robust conversation flow
@@ -65,15 +65,15 @@ class UIComponents:
             *🎤 **LangGraph-powered continuous listening** - speak anytime!*
             
             **Features:**
-            - 🔄 Robust state management
-            - 🛡️ Advanced error handling  
-            - 📊 Structured conversation flow
-            - 🎯 Conditional routing
+            - Robust state management
+            - Advanced error handling  
+            - Structured conversation flow
+            - Conditional routing
             """)
             
             with gr.Row():
-                clear_btn = gr.Button("🗑️ Clear Chat", variant="secondary")
-                restart_btn = gr.Button("🔄 Restart Session", variant="primary")
+                clear_btn = gr.Button("Clear Chat", variant="secondary")
+                restart_btn = gr.Button("Restart Session", variant="primary")
                 
             status_display = gr.Textbox(
                 label="Status", 
@@ -131,9 +131,9 @@ class UIComponents:
         if status['is_processing']:
             return "🎤 Processing audio..."
         elif status['session_active']:
-            return f"✅ Active - {status['chat_history_length']} messages"
+            return f"Active - {status['chat_history_length']} messages"
         else:
-            return "⏸️ Session ended"
+            return "Session ended"
     
     def create_interface(self) -> gr.Blocks:
         """Create the complete Gradio interface"""

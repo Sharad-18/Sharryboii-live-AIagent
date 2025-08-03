@@ -75,7 +75,7 @@ def check_dependencies():
             missing_packages.append(package)
     
     if missing_packages:
-        print("❌ Missing required packages:")
+        print("Missing required packages:")
         for package in missing_packages:
             print(f"  - {package}")
         print("\n💡 Install missing packages with:")
@@ -100,7 +100,7 @@ def check_api_keys():
     
     # Only GROQ is required, others are optional
     if not api_status["GROQ_API_KEY"]:
-        print("\n⚠️  Warning: GROQ_API_KEY is required for AI responses")
+        print("\n Warning: GROQ_API_KEY is required for AI responses")
         print("   Set it in your .env file or environment variables")
         return False
     
@@ -121,30 +121,30 @@ def test_tools():
     try:
         # Test system info
         system_result = tools.execute_tool("system")
-        print("✅ System tool: Working")
+        print("System tool: Working")
         
         # Test calculator
         calc_result = tools.execute_tool("calculator", expression="2+2")
-        print("✅ Calculator tool: Working")
+        print("Calculator tool: Working")
         
         # Test weather (might fail without API key)
         try:
             weather_result = tools.execute_tool("weather", city="London")
-            print("✅ Weather tool: Working")
+            print("Weather tool: Working")
         except:
-            print("⚠️  Weather tool: Requires API key")
+            print("Weather tool: Requires API key")
         
         # Test search
         try:
             search_result = tools.execute_tool("search", query="test")
-            print("✅ Search tool: Working")
+            print("Search tool: Working")
         except:
-            print("⚠️  Search tool: Limited functionality")
+            print("Search tool: Limited functionality")
         
         print(f"🎯 Total tools available: {len(tools.get_available_tools())}")
         
     except Exception as e:
-        print(f"❌ Tool testing error: {e}")
+        print(f"Tool testing error: {e}")
         return False
     
     return True
@@ -155,7 +155,7 @@ def print_startup_banner():
     banner = f"""
 ╭─────────────────────────────────────────────────────────────╮
 │                                                             │
-│  🤖 SharryBoii - Enhanced AI Assistant v2.0                │
+│  🤖 SharryBoii - AI Assistant v2.0                │
 │                                                             │
 │  🎯 Features:                                               │
 │     • LangGraph-powered conversation flow                   │
@@ -181,7 +181,7 @@ def main():
     logger = logging.getLogger(__name__)
     
     # Check dependencies
-    print("🔍 Checking dependencies...")
+    # print("🔍 Checking dependencies...")
     # if not check_dependencies():
     #     logger.error("Missing dependencies. Please install required packages.")
     #     sys.exit(1)
@@ -195,7 +195,7 @@ def main():
             sys.exit(1)
     
     # Validate configuration
-    print("⚙️  Validating configuration...")
+    print("Validating configuration...")
     if not config.validate():
         logger.error("Configuration validation failed.")
         sys.exit(1)
@@ -209,7 +209,7 @@ def main():
     
     try:
         # Create UI components
-        logger.info("🎨 Initializing enhanced UI components...")
+        logger.info("Initializing enhanced UI components...")
         ui = UIComponents()
         
         # Create interface
@@ -240,7 +240,7 @@ def main():
         
     except Exception as e:
         logger.error(f"Application error: {e}")
-        print(f"❌ Critical Error: {e}")
+        print(f"Critical Error: {e}")
         print("Check the log file 'ai_assistant.log' for detailed error information.")
         sys.exit(1)
 
