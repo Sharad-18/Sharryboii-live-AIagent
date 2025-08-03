@@ -17,7 +17,7 @@ def text_to_speech_with_eleven_lab(input_text, output_file) -> str:
         if os_name == "Darwin":  # macOS
             subprocess.run(['afplay', output_file])
         elif os_name == "Windows":  # Windows
-            subprocess.run(['powershell', '-c', f'(New-Object Media.SoundPlayer "{output_filepath}").PlaySync();'])
+            subprocess.run(['powershell', '-c', f'(New-Object Media.SoundPlayer "{output_file}").PlaySync();'])
         elif os_name == "Linux":  # Linux
             subprocess.run(['aplay', output_file])  # Alternative: use 'mpg123' or 'ffplay'
         else:

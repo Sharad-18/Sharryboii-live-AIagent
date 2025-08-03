@@ -1,9 +1,9 @@
 """
-Enhanced chat state management module with tool integration
+Enhanced chat state management module with tool integration - UPDATED
 """
 
 import time
-from typing import List, Tuple, Generator
+from typing import List, Tuple, Generator, Optional
 from workflow import EnhancedAIAssistantWorkflow
 from tools import tools
 
@@ -19,6 +19,9 @@ class EnhancedChatManager:
         self.tools_enabled = True
         self.last_intent = None
         self.conversation_count = 0
+        self.current_thread_id = None  # Track current thread ID
+        self.tts_enabled = True  # NEW: TTS toggle
+        self.max_tts_chars = 500  # NEW: TTS character limit
     
     def process_audio_cycle(self) -> List[Tuple[str, str]]:
         """Single cycle of enhanced audio processing using LangGraph with tools"""
@@ -31,8 +34,18 @@ class EnhancedChatManager:
             # Create initial state for this cycle
             initial_state = self.workflow.create_initial_state(self.chat_history.copy())
             
-            # Run the enhanced workflow
-            final_state = self.workflow.invoke(initial_state)
+            # Run the enhanced workflow with proper thread management
+            if self.current_thread_id:
+                final_state = self.workflow.invoke_with_custom_thread(
+                    initial_state, 
+                    self.current_thread_id
+                )
+            else:
+                final_state = self.workflow.invoke(initial_state)
+                self.current_thread_id = self.workflow.thread_id
+            
+            # Handle potential TTS errors gracefully
+            self._handle_tts_response(final_state)
             
             # Update chat history
             if final_state.get("chat_history"):
@@ -51,14 +64,77 @@ class EnhancedChatManager:
                     "👋 Session ended. Say 'hello' or restart to begin again!"
                 ])
             
+            # Handle any errors that occurred during processing
+            if final_state.get("error_message"):
+                self._handle_workflow_error(final_state["error_message"])
+            
         except Exception as e:
-            print(f"Enhanced workflow error: {e}")
-            self.chat_history.append(["System", f"🚨 Workflow Error: {str(e)}"])
+            error_msg = str(e)
+            print(f"Enhanced workflow error: {error_msg}")
+            
+            # Check for specific TTS quota error
+            if "quota_exceeded" in error_msg.lower() or "credits" in error_msg.lower():
+                self._handle_tts_quota_error(error_msg)
+            else:
+                self.chat_history.append(["System", f"🚨 Workflow Error: {error_msg}"])
         
         finally:
             self.is_processing = False
         
         return self.chat_history
+    
+    def _handle_tts_response(self, final_state: dict) -> None:
+        """Handle TTS response with error checking"""
+        if not self.tts_enabled:
+            return
+            
+        current_response = final_state.get("current_response", "")
+        if current_response and len(current_response) > self.max_tts_chars:
+            # Truncate response for TTS
+            truncated = self._truncate_for_tts(current_response)
+            self.chat_history.append([
+                "System", 
+                f"ℹ️ Response truncated for TTS (original: {len(current_response)} chars, truncated: {len(truncated)} chars)"
+            ])
+    
+    def _handle_tts_quota_error(self, error_msg: str) -> None:
+        """Handle TTS quota exceeded errors"""
+        self.tts_enabled = False  # Automatically disable TTS
+        self.chat_history.append([
+            "System", 
+            "🔇 TTS quota exceeded. Audio output disabled for this session. Text responses will continue."
+        ])
+        self.chat_history.append([
+            "System", 
+            "💡 To continue with audio: 1) Upgrade your ElevenLabs plan, 2) Use shorter responses, or 3) Wait for quota reset."
+        ])
+    
+    def _handle_workflow_error(self, error_msg: str) -> None:
+        """Handle general workflow errors"""
+        if "TTS error" in error_msg and ("quota" in error_msg or "credits" in error_msg):
+            self._handle_tts_quota_error(error_msg)
+        else:
+            self.chat_history.append(["System", f"⚠️ {error_msg}"])
+    
+    def _truncate_for_tts(self, text: str) -> str:
+        """Truncate text to fit TTS character limits"""
+        if len(text) <= self.max_tts_chars:
+            return text
+        
+        # Try to truncate at sentence boundary
+        sentences = text.split('. ')
+        truncated = ""
+        
+        for sentence in sentences:
+            if len(truncated + sentence + '. ') <= self.max_tts_chars - 20:
+                truncated += sentence + '. '
+            else:
+                break
+        
+        if not truncated:  # If even first sentence is too long
+            truncated = text[:self.max_tts_chars-3] + "..."
+        
+        return truncated.strip()
     
     def continuous_audio_processing(self) -> Generator[List[Tuple[str, str]], None, None]:
         """Enhanced continuous audio processing with better error handling"""
@@ -67,7 +143,7 @@ class EnhancedChatManager:
         
         # Add welcome message
         if not self.chat_history:
-            self.add_system_message("""
+            self.add_system_message(f"""
 🎉 **Enhanced AI Assistant Ready!**
 
 I now have access to powerful tools:
@@ -78,6 +154,9 @@ I now have access to powerful tools:
 ⏰ **Time & System** - Get current time and system info
 📁 **File Manager** - Browse and read files
 📰 **News** - Get latest headlines
+
+🎤 **Audio**: {'Enabled' if self.tts_enabled else 'Disabled (quota/error)'}
+🧵 **Thread ID**: {self.current_thread_id or 'New session'}
 
 Just speak naturally and I'll use the right tools automatically!
             """)
@@ -103,9 +182,16 @@ Just speak naturally and I'll use the right tools automatically!
                     
             except Exception as e:
                 retry_count += 1
-                print(f"Continuous processing error (attempt {retry_count}): {e}")
+                error_str = str(e)
+                print(f"Continuous processing error (attempt {retry_count}): {error_str}")
                 
-                error_msg = f"🔄 Processing error (attempt {retry_count}/{max_retries}): {str(e)}"
+                # Special handling for TTS quota errors
+                if "quota_exceeded" in error_str.lower():
+                    self._handle_tts_quota_error(error_str)
+                    yield self.chat_history
+                    continue  # Don't count TTS errors as retries
+                
+                error_msg = f"🔄 Processing error (attempt {retry_count}/{max_retries}): {error_str}"
                 self.chat_history.append(["System", error_msg])
                 yield self.chat_history
                 
@@ -127,6 +213,9 @@ Just speak naturally and I'll use the right tools automatically!
         self.session_active = True
         self.conversation_count = 0
         self.last_intent = None
+        # Reset workflow thread
+        self.workflow.reset_workflow_thread()
+        self.current_thread_id = self.workflow.thread_id
         return []
     
     def get_chat_history(self) -> List[Tuple[str, str]]:
@@ -147,6 +236,11 @@ Just speak naturally and I'll use the right tools automatically!
         self.is_processing = False
         self.conversation_count = 0
         self.last_intent = None
+        self.tts_enabled = True  # Re-enable TTS on restart
+        
+        # Reset workflow thread
+        self.workflow.reset_workflow_thread()
+        self.current_thread_id = self.workflow.thread_id
         
         # Clear history and add enhanced welcome
         self.chat_history = []
@@ -155,6 +249,8 @@ Just speak naturally and I'll use the right tools automatically!
 
 🛠️ **Available Tools**: {len(tools.get_available_tools())} tools ready
 📊 **Previous Conversations**: {self.conversation_count} messages processed
+🧵 **New Thread ID**: {self.current_thread_id}
+🎤 **TTS Status**: {'Enabled' if self.tts_enabled else 'Disabled'}
 
 {self.workflow.get_available_tools_info()}
 
@@ -169,6 +265,21 @@ Ready for your next question! 🎤
         self.tools_enabled = not self.tools_enabled
         status = "enabled" if self.tools_enabled else "disabled"
         message = f"🛠️ Tools are now {status}"
+        self.add_system_message(message)
+        return message
+    
+    def toggle_tts(self) -> str:
+        """Toggle TTS on/off"""
+        self.tts_enabled = not self.tts_enabled
+        status = "enabled" if self.tts_enabled else "disabled"
+        message = f"🎤 Text-to-Speech is now {status}"
+        self.add_system_message(message)
+        return message
+    
+    def set_tts_limit(self, max_chars: int) -> str:
+        """Set TTS character limit"""
+        self.max_tts_chars = max_chars
+        message = f"🎤 TTS character limit set to {max_chars}"
         self.add_system_message(message)
         return message
     
@@ -187,16 +298,24 @@ Ready for your next question! 🎤
             self.chat_history.append(["System", error_msg])
             return error_msg
     
+    def get_workflow_state(self) -> Optional[dict]:
+        """Get current workflow state"""
+        return self.workflow.get_workflow_state(self.current_thread_id)
+    
     def get_enhanced_status(self) -> dict:
         """Get detailed status information including tool analytics"""
         return {
             "session_active": self.session_active,
             "is_processing": self.is_processing,
             "tools_enabled": self.tools_enabled,
+            "tts_enabled": self.tts_enabled,
+            "tts_char_limit": self.max_tts_chars,
             "chat_history_length": len(self.chat_history),
             "conversation_count": self.conversation_count,
             "last_intent": self.last_intent,
             "available_tools": len(tools.get_available_tools()),
+            "current_thread_id": self.current_thread_id,
+            "workflow_thread_id": self.workflow.thread_id,
             "last_message": self.chat_history[-1] if self.chat_history else None,
             "tool_registry_status": "Active" if tools else "Error"
         }
@@ -215,7 +334,9 @@ Ready for your next question! 🎤
 🤖 AI responses: {len(ai_messages)}
 🎯 Last detected intent: {self.last_intent or 'None'}
 🛠️ Tools status: {'Enabled' if self.tools_enabled else 'Disabled'}
+🎤 TTS status: {'Enabled' if self.tts_enabled else 'Disabled'}
 📈 Session active: {'Yes' if self.session_active else 'No'}
+🧵 Thread ID: {self.current_thread_id or 'None'}
         """
         
         return summary
@@ -228,8 +349,11 @@ Ready for your next question! 🎤
                 filename = f"chat_history_{timestamp}.txt"
             
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write("SharryBoii AI Assistant - Chat History\n")
+                f.write("SharryBoii AI Assistant - Enhanced Chat History\n")
                 f.write(f"Exported: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Thread ID: {self.current_thread_id}\n")
+                f.write(f"Tools Enabled: {self.tools_enabled}\n")
+                f.write(f"TTS Enabled: {self.tts_enabled}\n")
                 f.write("=" * 50 + "\n\n")
                 
                 for speaker, message in self.chat_history:
