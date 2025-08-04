@@ -1,4 +1,4 @@
-# 🤖 SharryBoii – The Witty AI Assistant with Vision, Tools, and Personality
+# SharryBoii – The Witty AI Assistant with Vision, Tools, and Personality
 
 **SharryBoii** is your AI-powered sidekick that *sees*, *thinks*, and *responds with sass*.  
 Built using LangChain + LangGraph, integrated with computer vision, search, weather, file I/O, system stats, and more — all wrapped in a natural, chatty interface.
