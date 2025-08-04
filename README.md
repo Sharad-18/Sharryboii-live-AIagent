@@ -5,24 +5,24 @@ Built using LangChain + LangGraph, integrated with computer vision, search, weat
 
 ---
 
-## ✨ Features
+## Features
 
-- 🎥 **Webcam Vision** – Ask it:  
+- **Webcam Vision** – Ask it:  
   > “Do I look tired today?”  
   > “Do I have a beard right now?”  
   Captures a live image via webcam and responds using Groq’s LLaMA Vision model.
 
-- 🌦️ **Real-Time Weather**  
-- 🔎 **Internet Search + News Headlines**  
-- 🧮 **Math Evaluator / Calculator**  
-- 🧠 **Dynamic Tool Routing (ReAct via LangGraph)**  
-- 💾 **File Reading & Directory Listing**  
-- 💻 **System Stats (CPU, Memory, Time)**  
-- ⏰ **Reminders (Prototype)**
+-  **Real-Time Weather**  
+-  **Internet Search + News Headlines**  
+-  **Math Evaluator / Calculator**  
+-  **Dynamic Tool Routing (ReAct via LangGraph)**  
+-  **File Reading & Directory Listing**  
+-  **System Stats (CPU, Memory, Time)**  
+-  **Reminders (Prototype)**
 
 ---
 
-## 🧠 Powered By
+##  Powered By
 
 - [LangChain](https://www.langchain.com/)
 - [LangGraph](https://www.langgraph.dev/)
@@ -34,7 +34,7 @@ Built using LangChain + LangGraph, integrated with computer vision, search, weat
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Clone the repo
 
